@@ -1,0 +1,13 @@
+{
+  "name": "simple-webgl-cube",
+  "version": "1.0.0",
+  "description": "Simple rotating 3D cube WebGL demo",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "serve": "npx http-server -p 8000"
+  },
+  "keywords": ["webgl", "3d", "cube", "demo"],
+  "author": "SyncGaming",
+  "license": "MIT"
+}
