@@ -259,7 +259,7 @@ export default function GamePlayer() {
                 srcDoc={iframeContent}
                 className="w-full h-full border-0"
                 title="Game Player"
-                sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+                sandbox="allow-scripts allow-pointer-lock"
               />
             ) : (
               <div className="text-center">
