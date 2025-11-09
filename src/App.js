@@ -146,13 +146,14 @@ function MainLanding() {
       {/* Hero Section with Parallax */}
       <motion.header 
         style={{ y: backgroundY }}
-        className="relative flex flex-col items-center justify-center text-center pt-32 pb-24 px-4 min-h-screen"
+        className="relative flex flex-col items-center justify-center text-center pt-32 pb-24 px-4 min-h-screen w-full"
       >
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           style={{ opacity }}
+          className="w-full max-w-4xl mx-auto text-center"
         >
           <motion.h1 
             className="text-6xl md:text-7xl font-extrabold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent"
@@ -164,7 +165,7 @@ function MainLanding() {
           </motion.h1>
           
           <motion.p 
-            className="text-xl md:text-2xl mb-10 max-w-3xl text-gray-300 leading-relaxed"
+            className="text-xl md:text-2xl mb-10 mx-auto max-w-3xl text-gray-300 leading-relaxed text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.5 }}
