@@ -11,11 +11,9 @@ if (process.env.NODE_ENV !== 'production') {
 const app = express();
 
 // Middleware
-const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? ['https://sync-gaming-5a4c.web.app'] // Your Firebase Hosting URL
-  : ['http://localhost:3000', 'http://127.0.0.1:3000'];
-
-app.use(cors({
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? ['https://hilarious-crostata-bb59b0.netlify.app'] // Your Netlify URL
+  : ['http://localhost:3000', 'http://127.0.0.1:3000'];app.use(cors({
   origin: allowedOrigins,
   credentials: true
 }));
