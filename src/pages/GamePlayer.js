@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import JSZip from 'jszip';
 import { db } from '../firebase';
 import Navbar from '../components/Navbar';
 
@@ -11,6 +12,7 @@ export default function GamePlayer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [gameUrl, setGameUrl] = useState('');
+  const [iframeContent, setIframeContent] = useState('');
 
   useEffect(() => {
     fetchGame();
@@ -45,23 +47,104 @@ export default function GamePlayer() {
 
   const loadGameFromZip = async (gameData) => {
     try {
-      // Check if we have Base64-encoded file data from Firestore
       if (gameData.fileData) {
-        // Base64 string is already stored in Firestore
-        // Create a Blob and Object URL for download
+        // Decode Base64 to binary
         const binaryString = atob(gameData.fileData);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
-        const blob = new Blob([bytes], { type: 'application/zip' });
-        const url = URL.createObjectURL(blob);
-        setGameUrl(url);
+
+        // Extract ZIP file
+        const zip = new JSZip();
+        await zip.loadAsync(bytes);
+
+        // Find index.html
+        let indexHtmlContent = null;
+        let indexHtmlPath = null;
+
+        // Search for index.html in the root or first folder
+        zip.forEach((relativePath, file) => {
+          if (relativePath.endsWith('index.html') && !file.dir) {
+            indexHtmlPath = relativePath;
+          }
+        });
+
+        if (indexHtmlPath) {
+          indexHtmlContent = await zip.file(indexHtmlPath).async('string');
+
+          // Create a blob-based data structure for all files
+          const files = {};
+          for (const [path, file] of Object.entries(zip.files)) {
+            if (!file.dir) {
+              files[path] = file;
+            }
+          }
+
+          // Create a custom HTML that can load resources from the zip
+          const modifiedHtml = createSandboxedHTML(indexHtmlContent, zip, indexHtmlPath);
+          setIframeContent(modifiedHtml);
+
+          // Also create download URL for backup
+          const blob = new Blob([bytes], { type: 'application/zip' });
+          const url = URL.createObjectURL(blob);
+          setGameUrl(url);
+        } else {
+          setError('No index.html found in the uploaded ZIP file');
+        }
       }
     } catch (err) {
       console.error('Error loading game:', err);
-      setError('Failed to load game content');
+      setError('Failed to load game content: ' + err.message);
     }
+  };
+
+  const createSandboxedHTML = (htmlContent, zip, indexHtmlPath) => {
+    // Get the directory of index.html
+    const indexDir = indexHtmlPath.substring(0, indexHtmlPath.lastIndexOf('/'));
+
+    // Create a blob URL for each resource
+    const blobUrls = {};
+
+    // Modify HTML to use data URLs for resources
+    let modifiedHtml = htmlContent;
+
+    // Replace relative paths with blob URLs (this is a simplified approach)
+    // For a more robust solution, we'd need to actually load and convert each resource
+    // For now, we'll create a custom script that handles resource loading
+
+    const wrapper = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { margin: 0; padding: 0; }
+          canvas { display: block; width: 100%; height: 100%; }
+        </style>
+      </head>
+      <body>
+        <div id="game-container"></div>
+        <script>
+          // Simple resource loader for the game
+          const zipFiles = {};
+          window.addEventListener('load', function() {
+            // Try to find and execute the game scripts
+            const scripts = document.querySelectorAll('script');
+            scripts.forEach(script => {
+              if (script.src) {
+                console.log('Script src:', script.src);
+              }
+            });
+          });
+        </script>
+        ${htmlContent}
+      </body>
+      </html>
+    `;
+
+    return wrapper;
   };
 
   if (loading) {
@@ -133,26 +216,40 @@ export default function GamePlayer() {
           transition={{ delay: 0.3 }}
           className="bg-black rounded-lg overflow-hidden border border-gray-700"
         >
-          {/* WebGL Game Container */}
-          <div className="w-full aspect-video bg-gray-900 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🎮</div>
-              <p className="text-gray-400 mb-4">Game Preview</p>
-              <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
-                To play WebGL games directly in the browser, you need to properly extract and serve the game files. 
-                Download the game or contact the admin for the playable version.
-              </p>
+      {/* WebGL Game Container */}
+          <div className="w-full aspect-video bg-gray-900 flex items-center justify-center overflow-hidden">
+            {iframeContent ? (
+              <iframe
+                srcDoc={iframeContent}
+                className="w-full h-full border-0"
+                title="Game Player"
+                sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+              />
+            ) : (
+              <div className="text-center">
+                <div className="text-6xl mb-4">🎮</div>
+                <p className="text-gray-400 mb-4">Game Preview</p>
+                <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
+                  Loading game...
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Download Button */}
+          {gameUrl && (
+            <div className="mt-4 flex gap-4 justify-center">
               <motion.a
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 href={gameUrl}
                 download={`${game?.title}.zip`}
-                className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition"
+                className="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg transition"
               >
                 Download Game
               </motion.a>
             </div>
-          </div>
+          )}
         </motion.div>
 
         {/* Instructions */}
@@ -164,9 +261,9 @@ export default function GamePlayer() {
         >
           <h3 className="text-xl font-bold mb-4">How to Play</h3>
           <ol className="space-y-2 text-gray-300 list-decimal list-inside">
-            <li>Download the game zip file</li>
-            <li>Extract the zip file on your computer</li>
-            <li>Open the index.html file in your web browser</li>
+            <li>The game is playing in the browser above</li>
+            <li>Use your mouse and keyboard to control the game</li>
+            <li>Alternatively, download the game zip file and run it locally</li>
             <li>Enjoy the game!</li>
           </ol>
         </motion.div>

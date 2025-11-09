@@ -11,9 +11,11 @@ publish = "D:\\Projects\\sync-gaming\\build"
 publishOrigin = "config"
 commandOrigin = "config"
 command = "npm run build"
+base = "D:\\Projects\\sync-gaming"
 
 [build.environment]
 NODE_ENV = "production"
+REACT_APP_API_URL = "https://sync-gaming-backend-production.up.railway.app/api"
 
 [build.processing]
 
