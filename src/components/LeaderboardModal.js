@@ -27,7 +27,7 @@ function LeaderboardModal({ isOpen, onClose, gameId, gameName }) {
       }
       
       const data = await response.json();
-      setLeaderboard(data.scores || []);
+      setLeaderboard(data.leaderboard || []);
     } catch (err) {
       setError(err.message);
       console.error('Error fetching leaderboard:', err);

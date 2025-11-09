@@ -223,7 +223,7 @@ export default function GamePlayer() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="pt-20 px-4 mb-6"
+        className="pt-6 px-4 mb-6"
       >
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-6 mb-6">
