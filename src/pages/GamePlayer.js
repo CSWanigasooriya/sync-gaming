@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import Navbar from '../components/Navbar';
 
 export default function GamePlayer() {
   const { gameId } = useParams();
@@ -95,31 +96,8 @@ export default function GamePlayer() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <motion.div
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="fixed w-full z-50 bg-gray-900/95 backdrop-blur-md border-b border-gray-700"
-      >
-        <div className="flex justify-between items-center px-8 py-4">
-          <Link to="/">
-            <motion.div 
-              className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"
-              whileHover={{ scale: 1.05 }}
-            >
-              SyncGaming
-            </motion.div>
-          </Link>
-          <h2 className="text-lg font-semibold">{game?.title}</h2>
-          <Link 
-            to="/"
-            className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
-          >
-            Back
-          </Link>
-        </div>
-      </motion.div>
+      {/* Navigation */}
+      <Navbar isScrolled={true} />
 
       {/* Game Info */}
       <motion.div

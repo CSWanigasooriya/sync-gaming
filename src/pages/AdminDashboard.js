@@ -5,6 +5,7 @@ import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage, db, app } from '../firebase';
+import Navbar from '../components/Navbar';
 import AdminManagement from '../components/AdminManagement';
 
 const auth = getAuth(app);
@@ -186,34 +187,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
       {/* Navigation */}
-      <motion.div
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="fixed w-full z-50 bg-gray-900/95 backdrop-blur-md border-b border-gray-700"
-      >
-        <div className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
-          <Link to="/">
-            <motion.div 
-              className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"
-              whileHover={{ scale: 1.05 }}
-            >
-              SyncGaming
-            </motion.div>
-          </Link>
-          <div className="flex gap-4 items-center">
-            <span className="text-sm text-gray-400">{user?.email}</span>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleLogout}
-              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition"
-            >
-              Logout
-            </motion.button>
-          </div>
-        </div>
-      </motion.div>
+      <Navbar isScrolled={true} />
 
       <div className="pt-24 px-4 md:px-16 pb-12">
         <motion.div

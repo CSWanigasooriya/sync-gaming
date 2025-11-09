@@ -5,6 +5,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import './styles/themes.scss';
 import './App.css';
+import Navbar from './components/Navbar';
 import Auth from './pages/Auth';
 import AdminDashboard from './pages/AdminDashboard';
 import GamePlayer from './pages/GamePlayer';
@@ -140,28 +141,7 @@ function MainLanding() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white font-sans overflow-x-hidden">
       {/* Animated Navigation */}
-      <motion.nav 
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5 }}
-        className={`fixed w-full z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-gray-900/95 backdrop-blur-md shadow-lg' : 'bg-transparent'
-        }`}
-      >
-        <div className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
-          <motion.div 
-            className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"
-            whileHover={{ scale: 1.05 }}
-          >
-            SyncGaming
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link to="/auth" className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition shadow-lg font-semibold">
-              Get Started
-            </Link>
-          </motion.div>
-        </div>
-      </motion.nav>
+      <Navbar isScrolled={isScrolled} />
 
       {/* Hero Section with Parallax */}
       <motion.header 
