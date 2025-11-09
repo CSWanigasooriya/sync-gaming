@@ -16,6 +16,7 @@ export default function GamePlayer() {
 
   useEffect(() => {
     fetchGame();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
   const fetchGame = async () => {
@@ -73,16 +74,8 @@ export default function GamePlayer() {
         if (indexHtmlPath) {
           indexHtmlContent = await zip.file(indexHtmlPath).async('string');
 
-          // Create a blob-based data structure for all files
-          const files = {};
-          for (const [path, file] of Object.entries(zip.files)) {
-            if (!file.dir) {
-              files[path] = file;
-            }
-          }
-
           // Create a custom HTML that can load resources from the zip
-          const modifiedHtml = createSandboxedHTML(indexHtmlContent, zip, indexHtmlPath);
+          const modifiedHtml = createSandboxedHTML(indexHtmlContent);
           setIframeContent(modifiedHtml);
 
           // Also create download URL for backup
@@ -99,20 +92,8 @@ export default function GamePlayer() {
     }
   };
 
-  const createSandboxedHTML = (htmlContent, zip, indexHtmlPath) => {
-    // Get the directory of index.html
-    const indexDir = indexHtmlPath.substring(0, indexHtmlPath.lastIndexOf('/'));
-
-    // Create a blob URL for each resource
-    const blobUrls = {};
-
-    // Modify HTML to use data URLs for resources
-    let modifiedHtml = htmlContent;
-
-    // Replace relative paths with blob URLs (this is a simplified approach)
-    // For a more robust solution, we'd need to actually load and convert each resource
-    // For now, we'll create a custom script that handles resource loading
-
+  const createSandboxedHTML = (htmlContent) => {
+    // Wrap the HTML content in a safe container
     const wrapper = `
       <!DOCTYPE html>
       <html>
@@ -120,25 +101,12 @@ export default function GamePlayer() {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          body { margin: 0; padding: 0; }
+          body { margin: 0; padding: 0; overflow: hidden; }
+          html, body { width: 100%; height: 100%; }
           canvas { display: block; width: 100%; height: 100%; }
         </style>
       </head>
       <body>
-        <div id="game-container"></div>
-        <script>
-          // Simple resource loader for the game
-          const zipFiles = {};
-          window.addEventListener('load', function() {
-            // Try to find and execute the game scripts
-            const scripts = document.querySelectorAll('script');
-            scripts.forEach(script => {
-              if (script.src) {
-                console.log('Script src:', script.src);
-              }
-            });
-          });
-        </script>
         ${htmlContent}
       </body>
       </html>
