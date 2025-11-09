@@ -20,8 +20,15 @@ export default function Auth() {
     setError('');
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      navigate('/'); // Redirect to home page
+      const result = await signInWithPopup(auth, provider);
+      
+      // Check if user is admin
+      const idTokenResult = await result.user.getIdTokenResult();
+      if (idTokenResult.claims.admin) {
+        navigate('/admin'); // Redirect admin to admin dashboard
+      } else {
+        navigate('/'); // Redirect regular users to home
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -41,12 +48,20 @@ export default function Auth() {
     }
 
     try {
+      let result;
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        result = await createUserWithEmailAndPassword(auth, email, password);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        result = await signInWithEmailAndPassword(auth, email, password);
       }
-      navigate('/'); // Redirect to home page after successful authentication
+      
+      // Check if user is admin
+      const idTokenResult = await result.user.getIdTokenResult();
+      if (idTokenResult.claims.admin) {
+        navigate('/admin'); // Redirect admin to admin dashboard
+      } else {
+        navigate('/'); // Redirect regular users to home
+      }
     } catch (err) {
       setError(err.message);
     } finally {
