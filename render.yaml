@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: sync-gaming-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FIREBASE_DATABASE_URL
+        value: https://gen-lang-client-0350765152.firebaseio.com
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
