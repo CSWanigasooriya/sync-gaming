@@ -26,8 +26,8 @@ export default function GamePlayer() {
         const gameData = docSnap.data();
         setGame(gameData);
 
-        // Extract and load the game from zip
-        await loadGameFromZip(gameData.zipUrl);
+        // Extract and load the game from zip (Base64 from Firestore)
+        await loadGameFromZip(gameData);
 
         // Increment download count
         await updateDoc(docRef, {
@@ -43,21 +43,21 @@ export default function GamePlayer() {
     }
   };
 
-  const loadGameFromZip = async (zipUrl) => {
+  const loadGameFromZip = async (gameData) => {
     try {
-      // For now, we'll assume the zip file is already extracted and hosted
-      // In production, you'd use a library like JSZip to extract and serve the files
-      // For this implementation, we'll use the zip URL directly if it serves as a directory
-      
-      // Try common index file locations
-      const baseUrl = zipUrl.replace('.zip', '');
-      const possibleIndexUrls = [
-        `${baseUrl}/index.html`,
-        zipUrl, // If the zip is served as-is
-      ];
-
-      // For now, set a placeholder - in production this would need proper zip extraction
-      setGameUrl(zipUrl);
+      // Check if we have Base64-encoded file data from Firestore
+      if (gameData.fileData) {
+        // Base64 string is already stored in Firestore
+        // Create a Blob and Object URL for download
+        const binaryString = atob(gameData.fileData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/zip' });
+        const url = URL.createObjectURL(blob);
+        setGameUrl(url);
+      }
     } catch (err) {
       console.error('Error loading game:', err);
       setError('Failed to load game content');

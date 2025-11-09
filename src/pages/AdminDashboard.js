@@ -91,11 +91,16 @@ export default function AdminDashboard() {
     
     const files = e.dataTransfer.files;
     if (files && files[0]) {
-      if (files[0].name.endsWith('.zip')) {
-        setZipFile(files[0]);
-        setError('');
-      } else {
+      const file = files[0];
+      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+      
+      if (!file.name.endsWith('.zip')) {
         setError('Please upload a .zip file');
+      } else if (file.size > MAX_FILE_SIZE) {
+        setError(`File too large! Maximum size is 50MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      } else {
+        setZipFile(file);
+        setError('');
       }
     }
   };
@@ -103,11 +108,15 @@ export default function AdminDashboard() {
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.name.endsWith('.zip')) {
+      const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+      
+      if (!file.name.endsWith('.zip')) {
+        setError('Please upload a .zip file');
+      } else if (file.size > MAX_FILE_SIZE) {
+        setError(`File too large! Maximum size is 50MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      } else {
         setZipFile(file);
         setError('');
-      } else {
-        setError('Please upload a .zip file');
       }
     }
   };
@@ -120,39 +129,60 @@ export default function AdminDashboard() {
       return;
     }
 
+    // Check file size limit (50MB max)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
+    if (zipFile.size > MAX_FILE_SIZE) {
+      setError(`File too large! Maximum size is 50MB. Your file is ${(zipFile.size / 1024 / 1024).toFixed(2)}MB`);
+      return;
+    }
+
     try {
       setUploading(true);
       setError('');
 
-      // Upload zip file to Firebase Storage
-      const zipFileName = `games/${Date.now()}-${zipFile.name}`;
-      const zipRef = ref(storage, zipFileName);
-      await uploadBytes(zipRef, zipFile);
-      const zipUrl = await getDownloadURL(zipRef);
+      // Store in Firestore with Base64 encoding (free alternative)
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const base64String = event.target.result.split(',')[1];
 
-      // Add game metadata to Firestore
-      await addDoc(collection(db, 'games'), {
-        title: gameTitle,
-        description: gameDescription,
-        thumbnail: gameThumbnail,
-        zipUrl: zipUrl,
-        createdAt: new Date(),
-        createdBy: user.email,
-        downloads: 0
-      });
+          // Add game metadata and file to Firestore
+          await addDoc(collection(db, 'games'), {
+            title: gameTitle,
+            description: gameDescription,
+            thumbnail: gameThumbnail,
+            fileData: base64String,  // Base64 encoded ZIP file
+            fileName: zipFile.name,
+            fileSize: zipFile.size,
+            createdAt: new Date(),
+            createdBy: user.email,
+            downloads: 0
+          });
 
-      // Reset form
-      setGameTitle('');
-      setGameDescription('');
-      setGameThumbnail('');
-      setZipFile(null);
-      
-      // Refresh games list
-      await fetchGames();
-      alert('Game uploaded successfully!');
+          // Reset form
+          setGameTitle('');
+          setGameDescription('');
+          setGameThumbnail('');
+          setZipFile(null);
+          
+          // Refresh games list
+          await fetchGames();
+          alert('Game uploaded successfully!');
+        } catch (err) {
+          setError('Upload failed: ' + err.message);
+        } finally {
+          setUploading(false);
+        }
+      };
+
+      reader.onerror = () => {
+        setError('Failed to read file');
+        setUploading(false);
+      };
+
+      reader.readAsDataURL(zipFile);
     } catch (err) {
       setError('Upload failed: ' + err.message);
-    } finally {
       setUploading(false);
     }
   };
