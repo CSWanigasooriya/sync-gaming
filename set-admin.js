@@ -14,7 +14,7 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // UID to promote
-const uidToPromote = 'b0CoHW34W2WKGyZ0HyjTjtw6mJG3';
+const uidToPromote = '8kldh6A3ZcdRQez7AwqnfkH4PeL2';
 
 async function setAdmin() {
   try {
