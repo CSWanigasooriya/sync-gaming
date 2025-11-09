@@ -188,15 +188,14 @@ export default function AdminDashboard() {
     if (!window.confirm('Are you sure you want to delete this game?')) return;
 
     try {
-      // Delete from Firestore
+      // Delete from Firestore (file data is stored as Base64 in Firestore, not in Storage)
       await deleteDoc(doc(db, 'games', gameId));
-
-      // Delete from Storage
-      const storageRef = ref(storage, zipFileName);
-      await deleteObject(storageRef);
 
       // Refresh games list
       await fetchGames();
+      
+      // Show success message
+      alert('Game deleted successfully!');
     } catch (err) {
       setError('Failed to delete game: ' + err.message);
     }

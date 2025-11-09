@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import JSZip from 'jszip';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase';
 import Navbar from '../components/Navbar';
 import LeaderboardModal from '../components/LeaderboardModal';
 
 export default function GamePlayer() {
   const { gameId } = useParams();
+  const navigate = useNavigate();
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,11 +18,28 @@ export default function GamePlayer() {
   const [iframeContent, setIframeContent] = useState('');
   const [scoreSaved, setScoreSaved] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const auth = getAuth();
 
   useEffect(() => {
-    fetchGame();
-    
+    // Check authentication status
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        fetchGame();
+      } else {
+        // User is not authenticated, redirect to auth page
+        navigate('/auth', { replace: true });
+      }
+    });
+
+    return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameId]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
     // Listen for score messages from iframed games
     const handleMessage = async (event) => {
       if (event.data.type === 'gameScore') {
@@ -33,7 +51,7 @@ export default function GamePlayer() {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameId]);
+  }, [isAuthenticated]);
 
   const submitScore = async (scoreData) => {
     try {
