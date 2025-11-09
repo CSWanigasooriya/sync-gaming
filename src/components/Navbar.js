@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
 import { app } from '../firebase';
@@ -8,6 +8,7 @@ const auth = getAuth(app);
 
 export default function Navbar({ isScrolled }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -68,7 +69,7 @@ export default function Navbar({ isScrolled }) {
               <div className="text-sm text-gray-300 hidden sm:block">
                 {user.email || user.displayName || 'User'}
               </div>
-              {isAdmin && (
+              {isAdmin && location.pathname !== '/admin' && (
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Link 
                     to="/admin"
