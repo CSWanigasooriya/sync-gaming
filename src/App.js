@@ -34,6 +34,18 @@ const FEATURES = [
 ];
 
 function AnimatedGameCard({ game, index }) {
+  const sponsorBadgeColors = {
+    gold: 'from-yellow-400 to-yellow-600',
+    silver: 'from-gray-300 to-gray-500',
+    bronze: 'from-orange-400 to-orange-600'
+  };
+
+  const sponsorTextColors = {
+    gold: 'text-yellow-900',
+    silver: 'text-gray-900',
+    bronze: 'text-orange-900'
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -54,6 +66,12 @@ function AnimatedGameCard({ game, index }) {
         <motion.div 
           className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         />
+        {game.sponsored && (
+          <div className={`absolute top-3 right-3 px-3 py-1 bg-gradient-to-r ${sponsorBadgeColors[game.sponsorTier || 'gold']} rounded-full text-xs font-bold ${sponsorTextColors[game.sponsorTier || 'gold']} shadow-lg flex items-center gap-1`}>
+            <span>✨</span>
+            <span>{(game.sponsorTier || 'gold').toUpperCase()}</span>
+          </div>
+        )}
       </div>
       <div className="p-6">
         <h3 className="text-xl font-semibold mb-2">{game.title}</h3>

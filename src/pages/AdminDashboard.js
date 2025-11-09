@@ -7,6 +7,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { storage, db, app } from '../firebase';
 import Navbar from '../components/Navbar';
 import AdminManagement from '../components/AdminManagement';
+import AdminAnalytics from '../components/AdminAnalytics';
 
 const auth = getAuth(app);
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -235,7 +236,8 @@ export default function AdminDashboard() {
           <div className="flex gap-4 mb-8 border-b border-gray-700">
             {[
               { id: 'games', label: '🎮 Games' },
-              { id: 'admins', label: '👨‍💼 Admin Management' }
+              { id: 'admins', label: '👨‍💼 Admin Management' },
+              { id: 'analytics', label: '📊 Analytics' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -428,6 +430,19 @@ export default function AdminDashboard() {
             {/* Admins Tab */}
             {activeTab === 'admins' && userToken && (
               <AdminManagement userToken={userToken} currentUserEmail={user?.email} />
+            )}
+
+            {/* Analytics Tab */}
+            {activeTab === 'analytics' && (
+              <motion.div
+                key="analytics"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <AdminAnalytics />
+              </motion.div>
             )}
           </AnimatePresence>
         </motion.div>

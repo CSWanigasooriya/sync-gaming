@@ -262,6 +262,237 @@ app.get('/api/admin/audit-logs', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
+// ============ LEADERBOARD ENDPOINTS ============
+
+// Submit game score
+app.post('/api/scores/submit', verifyToken, async (req, res) => {
+  try {
+    const { gameId, score, duration } = req.body;
+    
+    if (!gameId || score === undefined || !duration) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const userId = req.user.uid;
+    const userEmail = req.user.email || 'Unknown';
+    const userName = req.user.name || userEmail.split('@')[0];
+
+    // Add score to leaderboard
+    const scoreRef = await db.collection('leaderboard').doc(gameId).collection('scores').add({
+      userId,
+      userName,
+      userEmail,
+      score: Number(score),
+      duration: Number(duration),
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      gameId
+    });
+
+    // Update user analytics
+    const userAnalyticsRef = db.collection('userAnalytics').doc(userId);
+    const userAnalyticsSnap = await userAnalyticsRef.get();
+
+    if (userAnalyticsSnap.exists) {
+      const currentData = userAnalyticsSnap.data();
+      const gamesPlayed = currentData.gamesPlayed || {};
+      const gameStats = gamesPlayed[gameId] || { timesPlayed: 0, bestScore: 0, totalTime: 0, averageScore: 0 };
+
+      gameStats.timesPlayed = (gameStats.timesPlayed || 0) + 1;
+      gameStats.bestScore = Math.max(gameStats.bestScore || 0, score);
+      gameStats.totalTime = (gameStats.totalTime || 0) + duration;
+      gameStats.averageScore = gameStats.bestScore;
+
+      gamesPlayed[gameId] = gameStats;
+
+      await userAnalyticsRef.update({
+        totalGamesPlayed: admin.firestore.FieldValue.increment(1),
+        totalPlayTime: admin.firestore.FieldValue.increment(duration),
+        totalScore: admin.firestore.FieldValue.increment(score),
+        averageScore: admin.firestore.FieldValue.increment(score),
+        lastPlayed: admin.firestore.FieldValue.serverTimestamp(),
+        gamesPlayed,
+        'playHistory': admin.firestore.FieldValue.arrayUnion({
+          gameId,
+          score,
+          duration,
+          timestamp: new Date()
+        })
+      });
+    } else {
+      // Create new analytics document
+      await userAnalyticsRef.set({
+        totalGamesPlayed: 1,
+        totalPlayTime: duration,
+        totalScore: score,
+        averageScore: score,
+        lastPlayed: admin.firestore.FieldValue.serverTimestamp(),
+        gamesPlayed: {
+          [gameId]: {
+            timesPlayed: 1,
+            bestScore: score,
+            totalTime: duration,
+            averageScore: score
+          }
+        },
+        playHistory: [{
+          gameId,
+          score,
+          duration,
+          timestamp: new Date()
+        }]
+      });
+    }
+
+    // Get rank for this score
+    const allScores = await db.collection('leaderboard').doc(gameId)
+      .collection('scores')
+      .orderBy('score', 'desc')
+      .get();
+
+    let rank = 1;
+    allScores.docs.forEach((doc, index) => {
+      if (doc.id === scoreRef.id) rank = index + 1;
+    });
+
+    res.json({
+      success: true,
+      message: 'Score saved successfully',
+      scoreId: scoreRef.id,
+      rank
+    });
+  } catch (error) {
+    console.error('Error submitting score:', error);
+    res.status(500).json({ error: 'Failed to submit score' });
+  }
+});
+
+// Get leaderboard for a game
+app.get('/api/leaderboard/:gameId', async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const offset = parseInt(req.query.offset) || 0;
+
+    const snapshot = await db.collection('leaderboard').doc(gameId)
+      .collection('scores')
+      .orderBy('score', 'desc')
+      .limit(limit + offset)
+      .get();
+
+    const leaderboard = snapshot.docs.map((doc, index) => ({
+      rank: offset + index + 1,
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp?.toDate?.() || new Date()
+    })).slice(offset);
+
+    const totalScores = snapshot.size;
+
+    res.json({
+      gameId,
+      leaderboard,
+      totalScores,
+      limit,
+      offset
+    });
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// Get user analytics
+app.get('/api/analytics/user/:userId', verifyToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Allow users to view their own analytics or admins to view any
+    if (req.user.uid !== userId && !req.user.admin) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const analytics = await db.collection('userAnalytics').doc(userId).get();
+
+    if (!analytics.exists) {
+      return res.json({
+        userId,
+        totalGamesPlayed: 0,
+        totalPlayTime: 0,
+        totalScore: 0,
+        averageScore: 0,
+        gamesPlayed: {},
+        playHistory: []
+      });
+    }
+
+    res.json({
+      userId,
+      ...analytics.data()
+    });
+  } catch (error) {
+    console.error('Error fetching user analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch user analytics' });
+  }
+});
+
+// Get game analytics (admin only)
+app.get('/api/analytics/game/:gameId', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { gameId } = req.params;
+
+    const analytics = await db.collection('gameAnalytics').doc(gameId).get();
+
+    if (!analytics.exists) {
+      return res.json({
+        gameId,
+        totalPlays: 0,
+        totalPlayers: 0,
+        averageScore: 0,
+        highScore: 0,
+        topPlayers: [],
+        dailyStats: {}
+      });
+    }
+
+    res.json({
+      gameId,
+      ...analytics.data()
+    });
+  } catch (error) {
+    console.error('Error fetching game analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch game analytics' });
+  }
+});
+
+// Get all users analytics (admin only)
+app.get('/api/analytics/all-users', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = parseInt(req.query.offset) || 0;
+
+    const snapshot = await db.collection('userAnalytics')
+      .orderBy('totalPlayTime', 'desc')
+      .limit(limit + offset)
+      .get();
+
+    const users = snapshot.docs.map((doc, index) => ({
+      rank: offset + index + 1,
+      userId: doc.id,
+      ...doc.data()
+    })).slice(offset);
+
+    res.json({
+      users,
+      total: snapshot.size,
+      limit,
+      offset
+    });
+  } catch (error) {
+    console.error('Error fetching all user analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch user analytics' });
+  }
+});
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);

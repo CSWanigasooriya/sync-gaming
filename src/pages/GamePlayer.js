@@ -3,8 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import JSZip from 'jszip';
+import { getAuth } from 'firebase/auth';
 import { db } from '../firebase';
 import Navbar from '../components/Navbar';
+import LeaderboardModal from '../components/LeaderboardModal';
 
 export default function GamePlayer() {
   const { gameId } = useParams();
@@ -13,11 +15,65 @@ export default function GamePlayer() {
   const [error, setError] = useState('');
   const [gameUrl, setGameUrl] = useState('');
   const [iframeContent, setIframeContent] = useState('');
+  const [scoreSaved, setScoreSaved] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const auth = getAuth();
 
   useEffect(() => {
     fetchGame();
+    
+    // Listen for score messages from iframed games
+    const handleMessage = async (event) => {
+      if (event.data.type === 'gameScore') {
+        console.log('Received game score:', event.data);
+        await submitScore(event.data);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
+
+  const submitScore = async (scoreData) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('User not authenticated');
+        return;
+      }
+
+      const token = await user.getIdToken();
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/scores/submit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            gameId,
+            score: scoreData.score,
+            duration: scoreData.duration
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to submit score');
+      }
+
+      const result = await response.json();
+      console.log('Score submitted successfully:', result);
+      setScoreSaved(true);
+
+      // Show notification
+      setTimeout(() => setScoreSaved(false), 3000);
+    } catch (err) {
+      console.error('Error submitting score:', err);
+    }
+  };
 
   const fetchGame = async () => {
     try {
@@ -150,6 +206,18 @@ export default function GamePlayer() {
       {/* Navigation */}
       <Navbar isScrolled={true} />
 
+      {/* Score Saved Notification */}
+      {scoreSaved && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="fixed top-20 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50"
+        >
+          ✅ Score saved to leaderboard!
+        </motion.div>
+      )}
+
       {/* Game Info */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -216,6 +284,14 @@ export default function GamePlayer() {
               >
                 Download Game
               </motion.a>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowLeaderboard(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg transition font-semibold flex items-center gap-2"
+              >
+                🏆 Leaderboard
+              </motion.button>
             </div>
           )}
         </motion.div>
@@ -236,6 +312,14 @@ export default function GamePlayer() {
           </ol>
         </motion.div>
       </div>
+
+      {/* Leaderboard Modal */}
+      <LeaderboardModal 
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        gameId={gameId}
+        gameName={game?.title || 'Game'}
+      />
     </div>
   );
 }
