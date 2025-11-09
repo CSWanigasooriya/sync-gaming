@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/leaderboard.scss';
 
@@ -7,7 +7,7 @@ function LeaderboardModal({ isOpen, onClose, gameId, gameName }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -28,13 +28,13 @@ function LeaderboardModal({ isOpen, onClose, gameId, gameName }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [gameId]);
 
   useEffect(() => {
     if (isOpen && gameId) {
       fetchLeaderboard();
     }
-  }, [isOpen, gameId]);
+  }, [isOpen, gameId, fetchLeaderboard]);
 
   const getMedalEmoji = (rank) => {
     if (rank === 1) return '🥇';

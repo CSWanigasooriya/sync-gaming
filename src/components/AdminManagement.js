@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -13,7 +13,7 @@ export default function AdminManagement({ userToken, currentUserEmail }) {
   const [success, setSuccess] = useState('');
 
   // Fetch admins list
-  const fetchAdmins = async () => {
+  const fetchAdmins = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -34,10 +34,10 @@ export default function AdminManagement({ userToken, currentUserEmail }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userToken]);
 
   // Fetch audit logs
-  const fetchAuditLogs = async () => {
+  const fetchAuditLogs = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -58,6 +58,70 @@ export default function AdminManagement({ userToken, currentUserEmail }) {
     } finally {
       setLoading(false);
     }
+  }, [userToken]);
+
+  // Add admin
+  const handleAddAdmin = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      const response = await fetch(`${API_URL}/admin/set-admin`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: adminEmail })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to set admin');
+      }
+
+      setSuccess('Admin privileges granted successfully!');
+      setAdminEmail('');
+      setTimeout(() => fetchAdmins(), 1000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Remove admin
+  const handleRemoveAdmin = async (email) => {
+    if (!window.confirm(`Remove admin privileges from ${email}?`)) return;
+
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      const response = await fetch(`${API_URL}/admin/remove-admin`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to remove admin');
+      }
+
+      setSuccess('Admin privileges removed successfully!');
+      setTimeout(() => fetchAdmins(), 1000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -66,7 +130,7 @@ export default function AdminManagement({ userToken, currentUserEmail }) {
     } else if (activeTab === 'logs') {
       fetchAuditLogs();
     }
-  }, [activeTab]);
+  }, [activeTab, fetchAdmins, fetchAuditLogs]);
 
   return (
     <motion.div

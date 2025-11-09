@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { getAuth } from 'firebase/auth';
 import '../styles/analytics.scss';
@@ -6,13 +6,14 @@ import '../styles/analytics.scss';
 function AdminAnalytics() {
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ limit: 20, offset: 0 });
   const auth = getAuth();
 
-  const fetchAllUsers = async () => {
+  const fetchAllUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -36,39 +37,13 @@ function AdminAnalytics() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchGameAnalytics = async (gameId) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('Not authenticated');
-
-      const token = await user.getIdToken();
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/analytics/game/${gameId}`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch game analytics');
-      const data = await response.json();
-      setGames([data.analytics]);
-    } catch (err) {
-      setError(err.message);
-      console.error('Error fetching game analytics:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [auth, pagination]);
 
   useEffect(() => {
     if (activeTab === 'users') {
       fetchAllUsers();
     }
-  }, [activeTab, pagination]);
+  }, [activeTab, fetchAllUsers]);
 
   const formatTime = (seconds) => {
     if (!seconds) return '0s';

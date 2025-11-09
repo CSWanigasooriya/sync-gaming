@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { storage, db, app } from '../firebase';
@@ -10,7 +10,6 @@ import AdminManagement from '../components/AdminManagement';
 import AdminAnalytics from '../components/AdminAnalytics';
 
 const auth = getAuth(app);
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
