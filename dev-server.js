@@ -14,10 +14,15 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 const projectRoot = __dirname;
 const backendDir = path.join(projectRoot, 'backend');
 const frontendDir = projectRoot;
+
+// Detect if we're on Windows
+const isWindows = os.platform() === 'win32';
+const npmCmd = isWindows ? 'npm.cmd' : 'npm';
 
 console.log('\n🚀 SyncGaming Development Server\n');
 console.log('=' .repeat(50));
@@ -47,7 +52,7 @@ backend.on('close', (code) => {
 // Wait a bit, then start Frontend
 setTimeout(() => {
   console.log('\n📱 Starting frontend server...\n');
-  const frontend = spawn('npm', ['start'], {
+  const frontend = spawn(npmCmd, ['start'], {
     cwd: frontendDir,
     stdio: 'inherit',
     env: { ...process.env, REACT_APP_API_URL: 'http://localhost:5000/api' }
