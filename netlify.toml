@@ -3,7 +3,7 @@
   publish = "build"
 
 [context.production]
-  environment = { NODE_ENV = "production" }
+  environment = { NODE_ENV = "production", REACT_APP_API_URL = "https://sync-gaming-backend-production.up.railway.app/api" }
 
 [[redirects]]
   from = "/*"
