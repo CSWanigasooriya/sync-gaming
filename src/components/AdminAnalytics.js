@@ -7,19 +7,10 @@ function AdminAnalytics() {
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [games, setGames] = useState([]);
-  const [selectedGame, setSelectedGame] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ limit: 20, offset: 0 });
   const auth = getAuth();
-
-  useEffect(() => {
-    if (activeTab === 'users') {
-      fetchAllUsers();
-    } else if (activeTab === 'games' && selectedGame) {
-      fetchGameAnalytics(selectedGame);
-    }
-  }, [activeTab, selectedGame]);
 
   const fetchAllUsers = async () => {
     setLoading(true);
@@ -73,6 +64,12 @@ function AdminAnalytics() {
     }
   };
 
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchAllUsers();
+    }
+  }, [activeTab, pagination]);
+
   const formatTime = (seconds) => {
     if (!seconds) return '0s';
     const hours = Math.floor(seconds / 3600);
@@ -82,11 +79,6 @@ function AdminAnalytics() {
     if (hours > 0) return `${hours}h ${minutes}m`;
     if (minutes > 0) return `${minutes}m ${secs}s`;
     return `${secs}s`;
-  };
-
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
-    return new Date(timestamp).toLocaleDateString();
   };
 
   return (
@@ -123,7 +115,7 @@ function AdminAnalytics() {
           <p className="font-semibold">Error: {error}</p>
           <motion.button
             whileHover={{ scale: 1.05 }}
-            onClick={activeTab === 'users' ? fetchAllUsers : () => selectedGame && fetchGameAnalytics(selectedGame)}
+            onClick={fetchAllUsers}
             className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-semibold transition"
           >
             Retry

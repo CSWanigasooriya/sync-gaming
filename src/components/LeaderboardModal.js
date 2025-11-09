@@ -7,19 +7,13 @@ function LeaderboardModal({ isOpen, onClose, gameId, gameName }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (isOpen && gameId) {
-      fetchLeaderboard();
-    }
-  }, [isOpen, gameId]);
-
   const fetchLeaderboard = async () => {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await fetch(
-        `${apiUrl}/api/leaderboard/${gameId}?limit=10&offset=0`
+        `${apiUrl}/leaderboard/${gameId}?limit=10&offset=0`
       );
       
       if (!response.ok) {
@@ -35,6 +29,12 @@ function LeaderboardModal({ isOpen, onClose, gameId, gameName }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen && gameId) {
+      fetchLeaderboard();
+    }
+  }, [isOpen, gameId]);
 
   const getMedalEmoji = (rank) => {
     if (rank === 1) return '🥇';

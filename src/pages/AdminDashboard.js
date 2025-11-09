@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
-import { collection, addDoc, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
 import { storage, db, app } from '../firebase';
 import Navbar from '../components/Navbar';
 import AdminManagement from '../components/AdminManagement';
@@ -15,7 +15,6 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [userToken, setUserToken] = useState(null);
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -43,7 +42,6 @@ export default function AdminDashboard() {
         // Check admin claims
         const claims = (await currentUser.getIdTokenResult()).claims;
         const isUserAdmin = claims.admin === true;
-        setIsAdmin(isUserAdmin);
 
         if (!isUserAdmin) {
           // Not an admin, redirect to home
@@ -60,8 +58,7 @@ export default function AdminDashboard() {
   const fetchGames = async () => {
     try {
       setLoading(true);
-      const q = query(collection(db, 'games'));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(collection(db, 'games'));
       const gamesList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -203,15 +200,6 @@ export default function AdminDashboard() {
       await fetchGames();
     } catch (err) {
       setError('Failed to delete game: ' + err.message);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/');
-    } catch (err) {
-      setError('Logout failed: ' + err.message);
     }
   };
 
