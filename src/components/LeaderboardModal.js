@@ -11,16 +11,25 @@ function LeaderboardModal({ isOpen, onClose, gameId, gameName }) {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(
-        `${apiUrl}/leaderboard/${gameId}?limit=10&offset=0`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch leaderboard');
+      if (!gameId) {
+        throw new Error('Game ID is missing');
       }
-      
+
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const url = `${apiUrl}/leaderboard/${gameId}?limit=10&offset=0`;
+
+      console.log('Fetching leaderboard from:', url);
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Leaderboard API response:', response.status, errorText);
+        throw new Error(`Failed to fetch leaderboard: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('Leaderboard data received:', data);
       setLeaderboard(data.leaderboard || []);
     } catch (err) {
       setError(err.message);
